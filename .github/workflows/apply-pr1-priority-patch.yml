@@ -23,8 +23,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Apply priority patch
-        run: node scripts/apply-priority-patch.js
+      - name: Apply priority patches
+        run: |
+          node scripts/apply-priority-patch.js
+          node scripts/apply-runtime-fixes.js
       - name: Validate generated index
         run: |
           grep -q 'inquiryPrivacyConsent' index.html
@@ -33,6 +35,9 @@ jobs:
           grep -q 'routeFromHash' index.html
           grep -q 'confirmModalBtnNo' index.html
           grep -q 'privacy.html' index.html
+          grep -q 'const showToast' index.html
+          grep -q 'const closeConfirmModal' index.html
+          grep -q 'window.closeConfirmModal' index.html
       - name: Commit and push generated changes
         run: |
           if git diff --quiet; then
@@ -42,5 +47,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Apply privacy consent and hash routing updates'
+          git commit -m 'Apply privacy and runtime fixes'
           git push origin HEAD:agent/privacy-and-routing
