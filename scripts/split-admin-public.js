@@ -27,7 +27,6 @@ function replaceRequired(text, search, replacement, label) {
   return text.replace(search, replacement);
 }
 
-// 1) Preserve the current all-in-one implementation as the administrator page.
 let adminHtml = source;
 adminHtml = replaceRequired(
   adminHtml,
@@ -42,7 +41,6 @@ adminHtml = adminHtml.replace(
 );
 fs.writeFileSync(adminPath, adminHtml);
 
-// 2) Remove administrator UI and administrator-only runtime from the public page.
 let publicHtml = source;
 publicHtml = publicHtml.replace('<body class="', '<body data-page="public" class="');
 
@@ -233,10 +231,8 @@ publicHtml = publicHtml.replace(
   '              startFirestoreListeners();'
 );
 
-// The public page does not use destructive administrator confirmation UI.
 publicHtml = publicHtml.replace(/\n\s*const closeConfirmModal = \(\) => \{[\s\S]*?\n\s*\};/, '');
 
-// Validate the intended separation before writing.
 for (const forbidden of [
   'id="view-admin"',
   'id="loginModal"',
@@ -283,3 +279,5 @@ for (const required of [
 
 fs.writeFileSync(sourcePath, publicHtml);
 console.log('Created admin.html and removed administrator UI/runtime from public index.html.');
+
+// Triggered after the temporary workflow was registered on the default branch.
