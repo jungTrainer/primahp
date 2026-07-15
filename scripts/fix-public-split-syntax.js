@@ -25,7 +25,6 @@ if (html.includes('););')) throw new Error('Malformed token );); remains in publ
 if (html.includes('renderAdminDashboard')) throw new Error('Administrator dashboard runtime remains in public index.html');
 if (html.includes('submitAdminLogin')) throw new Error('Administrator login runtime remains in public index.html');
 
-// Basic delimiter checks for the generated module script.
 const moduleStart = html.indexOf('<script type="module">');
 const moduleEnd = html.indexOf('</script>', moduleStart);
 if (moduleStart < 0 || moduleEnd < 0) throw new Error('Module script block not found');
@@ -42,3 +41,5 @@ for (const [open, close] of pairs) {
 
 fs.writeFileSync(file, html);
 console.log('Public split syntax repair completed.');
+
+// Trigger public split validation after workflow registration.
