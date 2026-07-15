@@ -1,0 +1,331 @@
+name: One-time static public refactor
+
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  refactor:
+    if: github.event.pull_request.number == 3 && github.event.pull_request.head.ref == 'agent/production-ready-refactor' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-ready-refactor
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Apply public static-data refactor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          text, changed = re.subn(
+              r"      let inquiries = \[.*?\n      \];\n\n      let publicComments = \[.*?\n      \];",
+              "      let inquiries = [];\n\n      let publicComments = [];",
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if changed != 1 and 'let inquiries = [];' not in text:
+              raise SystemExit('Could not remove local personal-data examples')
+
+          firestore_start = text.find('      /* ================= 5. REALTIME FIRESTORE DATA STREAMING')
+          map_start = text.find('      /* ================= 6. REALTIME MAP IMPLEMENTATION', firestore_start)
+          if firestore_start != -1 and map_start != -1:
+              static_section = r'''      /* ================= 5. STATIC PUBLIC DATA & FIRESTORE WRITES ================= */
+      const getCollectionRef = (name) => {
+        return db.collection('artifacts').doc(appId).collection('public').doc('data').collection(name);
+      };
+
+      const loadJson = async (url) => {
+        const response = await fetch(url, { cache: 'force-cache', headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(`${url} load failed: ${response.status}`);
+        return response.json();
+      };
+
+      const syncLocalData = () => {
+        applyLiveTextsToDOM();
+        renderStaff();
+        renderGallery();
+        renderNotice();
+      };
+
+      const loadStaticPublicData = async () => {
+        try {
+          const [noticeData, staffData, galleryData, contentData] = await Promise.all([
+            loadJson('data/notices.json'),
+            loadJson('data/staff.json'),
+            loadJson('data/gallery.json'),
+            loadJson('data/site-content.json')
+          ]);
+          if (Array.isArray(noticeData)) notices = noticeData;
+          if (Array.isArray(staffData)) workingStaff = staffData;
+          if (Array.isArray(galleryData)) albums = galleryData;
+          if (contentData && typeof contentData === 'object') Object.assign(siteEditableContents, contentData);
+        } catch (error) {
+          console.error('정적 공개 데이터 로딩 실패', error);
+          showToast('일부 홈페이지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        } finally {
+          syncLocalData();
+        }
+      };
+
+      let authInitPromise = null;
+      const ensureFirebaseAuth = async () => {
+        if (!isFirebaseReady) return false;
+        if (authUser) return true;
+        if (authInitPromise) return authInitPromise;
+        authInitPromise = (async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await auth.signInWithCustomToken(__initial_auth_token);
+            } else {
+              await auth.signInAnonymously();
+            }
+            authUser = auth.currentUser;
+            if (!authUser) throw new Error('Firebase authentication did not return a user.');
+            return true;
+          } catch (error) {
+            authInitPromise = null;
+            console.error('Firebase 인증 실패', error);
+            throw error;
+          }
+        })();
+        return authInitPromise;
+      };
+
+'''
+              text = text[:firestore_start] + static_section + text[map_start:]
+
+          input_start = text.find('      /* ================= 10. PUBLIC USER INPUTS & VALIDATION ================= */')
+          input_end = text.find('      /* ================= 13. STAFF / GALLERY / PUBLIC NOTICES ================= */', input_start)
+          if input_start == -1 or input_end == -1:
+              raise SystemExit('Could not locate public input section')
+
+          input_section = r'''      /* ================= 10. PUBLIC USER INPUTS & VALIDATION ================= */
+      const setFormSubmitting = (formId, submitting) => {
+        const form = document.getElementById(formId);
+        const button = form?.querySelector('button[type="submit"]');
+        if (!button) return;
+        button.disabled = submitting;
+        button.setAttribute('aria-busy', String(submitting));
+        button.classList.toggle('opacity-60', submitting);
+        button.classList.toggle('cursor-not-allowed', submitting);
+      };
+
+      const showInquiryResult = (html, state = 'success') => {
+        const box = document.getElementById('inquiryReceiptBox');
+        if (!box) return;
+        box.className = state === 'error'
+          ? 'rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-900'
+          : state === 'local'
+            ? 'rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900'
+            : 'rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] text-emerald-900';
+        box.innerHTML = html;
+      };
+
+      const submitHomeInquiry = async (event) => {
+        event.preventDefault();
+        const form = document.getElementById('widgetInquiryForm');
+        const name = document.getElementById('inquiryName').value.trim();
+        const phone = document.getElementById('inquiryPhone').value.trim();
+        const room = document.getElementById('inquiryRoom').value;
+        const msg = document.getElementById('inquiryMsg').value.trim();
+        const privacyConsent = document.getElementById('inquiryPrivacyConsent').checked;
+        const sensitiveConsent = document.getElementById('inquirySensitiveConsent').checked;
+
+        if (!privacyConsent || !sensitiveConsent) {
+          showToast('개인정보 및 민감정보 처리 동의가 모두 필요합니다.');
+          return;
+        }
+        const phoneRegex = /^(01[016789]{1}|02|0[3-9]{1}[0-9]{1})-[0-9]{3,4}-[0-9]{4}$/;
+        if (!phoneRegex.test(phone)) {
+          showToast('올바른 연락처 형식(예: 010-1234-5678)으로 입력해 주세요.');
+          return;
+        }
+        if (!name || name.length > 50 || !msg || msg.length > 1000) {
+          showToast('성명은 50자 이하, 상담 내용은 1,000자 이하로 입력해 주세요.');
+          return;
+        }
+
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const randomPart = globalThis.crypto?.randomUUID
+          ? globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
+          : `${now.getTime()}`.slice(-8);
+        const receiptNo = `PR-${dateStr.replace(/-/g, '')}-${randomPart}`;
+        const payload = {
+          receiptNo, name, phone, type: room, message: msg, status: '신규', followUp: false, memos: [],
+          privacyConsent: true, sensitiveConsent: true, consentedAt: now.toISOString(),
+          privacyPolicyVersion: '2026-07-15', createdAt: dateStr
+        };
+
+        setFormSubmitting('widgetInquiryForm', true);
+        try {
+          if (!isFirebaseReady) {
+            payload.id = `local-${Date.now()}`;
+            inquiries.push(payload);
+            form.reset();
+            showInquiryResult(`<strong>테스트 모드 임시 접수입니다.</strong><br>임시번호: <span class="font-mono font-black">${escapeHtml(receiptNo)}</span><br>현재 브라우저에만 저장되며 서버에는 전송되지 않았습니다.`, 'local');
+            showToast('테스트 모드: 서버 미전송 임시 접수');
+            return;
+          }
+          await ensureFirebaseAuth();
+          await getCollectionRef('inquiries').add(payload);
+          form.reset();
+          showInquiryResult(`<strong>입원 문의가 서버에 접수되었습니다.</strong><br>접수번호: <span class="font-mono font-black">${escapeHtml(receiptNo)}</span><br>상담 확인을 위해 접수번호를 보관해 주세요.`);
+          showToast(`문의 접수 완료: ${receiptNo}`);
+        } catch (error) {
+          console.error('입원 문의 저장 실패', error);
+          showInquiryResult('<strong>접수에 실패했습니다.</strong><br>입력 내용은 유지됩니다. 잠시 후 다시 시도하거나 051-867-7500으로 연락해 주세요.', 'error');
+          showToast('서버 저장에 실패했습니다. 다시 시도해 주세요.');
+        } finally {
+          setFormSubmitting('widgetInquiryForm', false);
+        }
+      };
+
+      const submitPublicComment = async (event) => {
+        event.preventDefault();
+        const form = document.getElementById('commentPublicForm');
+        const author = document.getElementById('commentAuthor').value.trim();
+        const noticeTitle = document.getElementById('commentNoticeSelect').value;
+        const comment = document.getElementById('commentText').value.trim();
+        const privacyConsent = document.getElementById('commentPrivacyConsent').checked;
+
+        if (!privacyConsent) {
+          showToast('댓글 등록을 위해 개인정보 수집·이용 동의가 필요합니다.');
+          return;
+        }
+        if (!author || author.length > 50 || !comment || comment.length > 500) {
+          showToast('작성자명은 50자 이하, 댓글은 500자 이하로 입력해 주세요.');
+          return;
+        }
+
+        const now = new Date();
+        const matchedNotice = notices.find(n => n.title === noticeTitle);
+        const payload = {
+          author, noticeId: matchedNotice ? matchedNotice.id : '1', noticeTitle, comment, isAnswered: false,
+          privacyConsent: true, consentedAt: now.toISOString(), privacyPolicyVersion: '2026-07-15',
+          createdAt: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+        };
+
+        setFormSubmitting('commentPublicForm', true);
+        try {
+          if (!isFirebaseReady) {
+            payload.id = `local-${Date.now()}`;
+            publicComments.push(payload);
+            form.reset();
+            showToast('테스트 모드: 댓글은 서버에 전송되지 않았습니다.');
+            return;
+          }
+          await ensureFirebaseAuth();
+          await getCollectionRef('comments').add(payload);
+          form.reset();
+          showToast('보호자 댓글이 서버에 등록되었습니다.');
+        } catch (error) {
+          console.error('보호자 댓글 저장 실패', error);
+          showToast('댓글 저장에 실패했습니다. 입력 내용은 유지됩니다.');
+        } finally {
+          setFormSubmitting('commentPublicForm', false);
+        }
+      };
+
+'''
+          text = text[:input_start] + input_section + text[input_end:]
+
+          notice_pattern = re.compile(
+              r"      const openNoticePublicView = async \(id, options = \{\}\) => \{.*?\n      \};\n\s*\n      const closeNoticeViewModal",
+              re.S,
+          )
+          text, notice_changed = notice_pattern.subn(r'''      const openNoticePublicView = (id, options = {}) => {
+        const n = notices.find(item => item.id === id);
+        if (!n) return;
+        n.count = Number(n.count || 0) + 1;
+        renderNotice();
+        document.getElementById('viewNoticeTitle').textContent = n.title;
+        document.getElementById('viewNoticeDate').textContent = `등록일: ${n.createdAt} | 조회수: ${n.count}`;
+        document.getElementById('viewNoticeBody').textContent = n.body;
+        document.getElementById('noticeViewModal').classList.replace('hidden', 'flex');
+        if (!options.fromHash && window.location.hash !== `#notice/${id}`) window.location.hash = `#notice/${id}`;
+      };
+
+      const closeNoticeViewModal''', text, count=1)
+          if notice_changed != 1 and 'const openNoticePublicView = (id, options = {})' not in text:
+              raise SystemExit('Could not replace notice view logic')
+
+          auth_start = text.find('      /* ================= 15. Firebase Auth listener (RULE 3) ================= */')
+          bootstrap_start = text.find('      /* ================= 16. INITIAL BOOTSTRAPPING ================= */', auth_start)
+          if auth_start != -1 and bootstrap_start != -1:
+              init_end = text.find('      initApp();', bootstrap_start) + len('      initApp();')
+              text = text[:auth_start] + r'''      /* ================= 15. INITIAL BOOTSTRAPPING ================= */
+      const initApp = () => {
+        loadStaticPublicData();
+        initLeafletMap();
+        window.addEventListener('hashchange', routeFromHash);
+        routeFromHash();
+      };
+
+      initApp();''' + text[init_end:]
+
+          forbidden = [
+            "getCollectionRef('notices').onSnapshot", "getCollectionRef('staff').onSnapshot",
+            "getCollectionRef('gallery').onSnapshot", "getCollectionRef('page-content').onSnapshot",
+            "getCollectionRef('notices').doc(id).update", '박순임', '정태식',
+            '010-9821-3442', '010-4491-0012', '김민재 보호자', '한수연 보호자'
+          ]
+          remaining = [value for value in forbidden if value in text]
+          if remaining:
+              raise SystemExit('Forbidden content remains: ' + ', '.join(remaining))
+
+          required = [
+            "loadJson('data/notices.json')", "loadJson('data/staff.json')",
+            "loadJson('data/gallery.json')", "loadJson('data/site-content.json')",
+            'const ensureFirebaseAuth = async () =>', '테스트 모드 임시 접수입니다.',
+            "getCollectionRef('inquiries').add(payload)", "getCollectionRef('comments').add(payload)",
+            'const openNoticePublicView = (id, options = {})'
+          ]
+          missing = [value for value in required if value not in text]
+          if missing:
+              raise SystemExit('Required content missing: ' + ', '.join(missing))
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate JavaScript and JSON
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for file in Path('data').glob('*.json'):
+              json.loads(file.read_text(encoding='utf-8'))
+          text = Path('index.html').read_text(encoding='utf-8')
+          start = text.index('<script type="module">') + len('<script type="module">')
+          end = text.index('</script>', start)
+          Path('/tmp/index-module.mjs').write_text(text[start:end], encoding='utf-8')
+          PY
+          node --check /tmp/index-module.mjs
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Use static data for public reads'
+          git push origin HEAD:agent/production-ready-refactor
