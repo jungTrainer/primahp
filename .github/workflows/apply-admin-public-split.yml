@@ -1,24 +1,23 @@
 name: Apply admin public split
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - agent/admin-public-split
-    paths:
-      - scripts/split-admin-public.js
+  pull_request_target:
+    types: [edited, reopened, synchronize]
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   split:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/admin-public-split'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/admin-public-split
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
