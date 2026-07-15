@@ -1,18 +1,11 @@
 [
   {
-    "id": "1",
+    "id": "staff-placeholder-1",
     "department": "medical",
-    "name": "이상엽 원장",
-    "position": "재활의학과 전문의",
-    "bio": "부산대학교 의과대학 재활의학 전임수료. 전) 서울 명지재활 부원장. 중풍 신경 마비 재활도수 치료 총괄 감독.",
-    "photo": null
-  },
-  {
-    "id": "2",
-    "department": "nursing",
-    "name": "이영희 간호부장",
-    "position": "수석 간호 감독",
-    "bio": "25년 임상 전문 간호 경력. 전 병동 욕창 예방 및 체위 변경 케어 간호 책임 지휘.",
-    "photo": null
+    "name": "의료진 정보 준비 중",
+    "position": "실제 의료진 정보로 교체 필요",
+    "bio": "관리자 화면에서 의료진의 성명, 전문분야, 소개와 동의받은 사진을 등록해 주세요.",
+    "photo": "assets/staff-placeholder.svg",
+    "order": 10
   }
 ]
