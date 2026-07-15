@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="프리마요양병원">
+  <rect width="64" height="64" rx="14" fill="#0F172A"/>
+  <path d="M29 32C17 22 7 27 8 39c1 11 14 16 22-5z" fill="#0284C7"/>
+  <path d="M32 29C22 17 27 7 39 8c11 1 16 14-5 22z" fill="#ffffff"/>
+  <path d="M35 32c12 10 22 5 21-7-1-11-14-16-22 5z" fill="#475569"/>
+  <path d="M32 35c10 12 5 22-7 21-11-1-16-14 5-22z" fill="#0369A1"/>
+  <circle cx="32" cy="32" r="4" fill="#ffffff"/>
+</svg>
