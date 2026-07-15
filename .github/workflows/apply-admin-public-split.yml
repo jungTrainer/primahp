@@ -1,4 +1,4 @@
-name: Apply admin public split
+name: Validate admin public split
 
 on:
   pull_request_target:
@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  split:
+  validate:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/admin-public-split'
     runs-on: ubuntu-latest
     steps:
@@ -21,8 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Split public and administrator pages
-        run: node scripts/split-admin-public.js
+      - name: Repair generated public JavaScript
+        run: node scripts/fix-public-split-syntax.js
       - name: Validate separation
         run: |
           test -f admin.html
@@ -31,11 +31,13 @@ jobs:
           ! grep -q 'id="view-admin"' index.html
           ! grep -q 'submitAdminLogin' index.html
           ! grep -q 'renderAdminDashboard' index.html
+          ! grep -q '););' index.html
           grep -q 'id="view-admin"' admin.html
           grep -q 'submitAdminLogin' admin.html
           grep -q 'id="widgetInquiryForm"' index.html
           grep -q 'id="commentPublicForm"' index.html
-      - name: Commit generated split
+          grep -q 'const routeFromHash' index.html
+      - name: Commit repaired public page
         run: |
           if git diff --quiet; then
             echo 'No generated changes.'
@@ -43,6 +45,6 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html admin.html
-          git commit -m 'Split public and administrator pages'
+          git add index.html
+          git commit -m 'Repair public split JavaScript'
           git push origin HEAD:agent/admin-public-split
