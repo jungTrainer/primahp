@@ -1128,6 +1128,22 @@
                   .replace(/'/g, "&#039;");
       }
 
+      let toastTimer = null;
+      const showToast = (message) => {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-msg');
+        if (!toast || !toastMsg) return;
+        toastMsg.textContent = message;
+        toast.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
+      };
+
+      const closeConfirmModal = () => {
+        const modal = document.getElementById('confirmModal');
+        if (modal) modal.classList.replace('flex', 'hidden');
+      };
+
       /* ================= 4. SHA-256 CLIENT DECRYPTION HASHING ================= */
       async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
@@ -2230,6 +2246,8 @@
       // HTML 인라인 onclick 등과 통제 연동을 위해 window 전역 공간으로 안전 매핑합니다.
       window.navigateTo = navigateTo;
       window.toggleMobileMenu = toggleMobileMenu;
+      window.showToast = showToast;
+      window.closeConfirmModal = closeConfirmModal;
       window.submitHomeInquiry = submitHomeInquiry;
       window.submitPublicComment = submitPublicComment;
       window.submitAdminLogin = submitAdminLogin;
