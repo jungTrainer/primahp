@@ -1,0 +1,26 @@
+[
+  {
+    "id": "facility-room",
+    "category": "병동 시설",
+    "title": "쾌적한 병실",
+    "desc": "실제 병실 사진과 병상 구성, 편의시설 정보를 등록해 주세요.",
+    "photo": "assets/facility-placeholder.svg",
+    "order": 10
+  },
+  {
+    "id": "facility-rehab",
+    "category": "재활 시설",
+    "title": "재활치료실",
+    "desc": "운동치료 장비와 재활 프로그램이 운영되는 공간을 보여주세요.",
+    "photo": "assets/facility-placeholder.svg",
+    "order": 20
+  },
+  {
+    "id": "facility-lounge",
+    "category": "생활 시설",
+    "title": "휴게 및 프로그램 공간",
+    "desc": "환자와 보호자가 이용하는 휴게공간과 프로그램실을 소개해 주세요.",
+    "photo": "assets/facility-placeholder.svg",
+    "order": 30
+  }
+]
