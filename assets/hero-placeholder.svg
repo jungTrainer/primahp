@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">병원 대표 이미지 등록 예정</title>
+  <desc id="desc">관리자 화면에서 실제 프리마요양병원 사진으로 교체하는 자리</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#0369a1"/></linearGradient><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M0 80L80 0" stroke="#fff" stroke-opacity=".05" stroke-width="2"/></pattern></defs>
+  <rect width="1920" height="1080" fill="url(#g)"/><rect width="1920" height="1080" fill="url(#p)"/>
+  <g transform="translate(1260 280)" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity=".75"><path d="M80 380V80h360v300"/><path d="M30 380h460"/><path d="M210 80V20h100v60"/><path d="M210 190h100M260 140v100"/><path d="M150 380v-110h220v110"/></g>
+  <text x="1280" y="770" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">병원 대표사진 업로드 영역</text>
+  <text x="1280" y="825" fill="#dbeafe" font-family="Arial,sans-serif" font-size="24">권장 1920×1080px · 실제 병원 외관 또는 밝은 내부 전경</text>
+</svg>
