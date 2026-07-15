@@ -7,4 +7,5 @@
   <url><loc>https://primacare.or.kr/#gallery</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://primacare.or.kr/#notice</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://primacare.or.kr/#directions</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://primacare.or.kr/privacy.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
 </urlset>
