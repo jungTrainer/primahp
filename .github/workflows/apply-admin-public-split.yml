@@ -1,0 +1,49 @@
+name: Apply admin public split
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/admin-public-split
+    paths:
+      - scripts/split-admin-public.js
+
+permissions:
+  contents: write
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/admin-public-split
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Split public and administrator pages
+        run: node scripts/split-admin-public.js
+      - name: Validate separation
+        run: |
+          test -f admin.html
+          grep -q 'data-page="public"' index.html
+          grep -q 'data-page="admin"' admin.html
+          ! grep -q 'id="view-admin"' index.html
+          ! grep -q 'submitAdminLogin' index.html
+          ! grep -q 'renderAdminDashboard' index.html
+          grep -q 'id="view-admin"' admin.html
+          grep -q 'submitAdminLogin' admin.html
+          grep -q 'id="widgetInquiryForm"' index.html
+          grep -q 'id="commentPublicForm"' index.html
+      - name: Commit generated split
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html admin.html
+          git commit -m 'Split public and administrator pages'
+          git push origin HEAD:agent/admin-public-split
