@@ -1,0 +1,72 @@
+name: Repair public index
+
+on:
+  pull_request_target:
+    types: [reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/admin-public-split'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/admin-public-split
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Repair malformed public render blocks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('          grid.appendChild(card););\n          }\n        });', '          grid.appendChild(card);\n        });')
+          text = text.replace('          }););\n          }\n        });', '          });\n        });')
+          if '););' in text:
+              raise SystemExit('Malformed token );); still remains')
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Extract and syntax-check module JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          start = text.index('<script type="module">') + len('<script type="module">')
+          end = text.index('</script>', start)
+          Path('/tmp/public-index.mjs').write_text(text[start:end], encoding='utf-8')
+          PY
+          node --check /tmp/public-index.mjs
+      - name: Validate public/admin separation
+        run: |
+          test -f admin.html
+          grep -q 'data-page="public"' index.html
+          grep -q 'data-page="admin"' admin.html
+          ! grep -q 'id="view-admin"' index.html
+          ! grep -q 'submitAdminLogin' index.html
+          ! grep -q 'renderAdminDashboard' index.html
+          ! grep -q 'openStaffAddModal' index.html
+          ! grep -q 'openAddAlbumModal' index.html
+          ! grep -q 'openAddNoticeModal' index.html
+          grep -q 'id="view-admin"' admin.html
+          grep -q 'submitAdminLogin' admin.html
+          grep -q 'id="widgetInquiryForm"' index.html
+          grep -q 'id="commentPublicForm"' index.html
+          grep -q 'const routeFromHash' index.html
+      - name: Commit repaired public page
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Repair public page JavaScript after admin split'
+          git push origin HEAD:agent/admin-public-split
