@@ -1,0 +1,120 @@
+name: Disable unapproved data collection
+
+on:
+  pull_request_target:
+    types: [edited]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  secure-public-page:
+    if: github.event.pull_request.number == 3 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/production-ready-refactor'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-ready-refactor
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Replace personal data forms with phone consultation guidance
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          inquiry_start = text.index('                <form id="widgetInquiryForm"')
+          inquiry_end = text.index('                </form>', inquiry_start) + len('                </form>')
+          inquiry_replacement = '''                <div id="inquiryPreparationNotice" class="space-y-4 text-xs">
+                  <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 leading-relaxed text-amber-950">
+                    <strong class="block text-sm mb-1"><i class="fa-solid fa-shield-halved mr-1"></i> 온라인 입원문의 준비 중</strong>
+                    개인정보 및 건강정보 보호 절차를 최종 점검하고 있습니다. 현재 온라인 정보 입력과 저장은 운영하지 않으며, 입원 상담은 대표전화로 안전하게 안내드립니다.
+                  </div>
+                  <a href="tel:051-867-7500" class="w-full bg-brand-navy hover:bg-brand-blue text-white font-bold py-3.5 rounded-xl transition-all shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-phone-volume"></i>
+                    <span>051-867-7500 전화 상담</span>
+                  </a>
+                  <p class="text-[11px] text-slate-500 text-center">온라인 문의 기능은 개인정보 처리 기준 확정 후 제공할 예정입니다.</p>
+                </div>'''
+          text = text[:inquiry_start] + inquiry_replacement + text[inquiry_end:]
+
+          comment_start = text.index('            <form id="commentPublicForm"')
+          comment_end = text.index('            </form>', comment_start) + len('            </form>')
+          comment_replacement = '''            <div id="commentPreparationNotice" class="rounded-xl border border-amber-300 bg-white p-4 text-xs leading-relaxed text-slate-700">
+              <strong class="block text-brand-navy mb-1"><i class="fa-solid fa-comments mr-1 text-brand-blue"></i> 온라인 댓글 기능 준비 중</strong>
+              개인정보 처리 기준 확정 전까지 보호자 댓글 입력과 저장을 운영하지 않습니다. 문의사항은 대표전화 <a href="tel:051-867-7500" class="font-black text-brand-blue underline">051-867-7500</a>으로 연락해 주세요.
+            </div>'''
+          text = text[:comment_start] + comment_replacement + text[comment_end:]
+
+          function_start_marker = '      /* ================= 10. PUBLIC USER INPUTS & VALIDATION ================= */'
+          function_end_marker = '      /* ================= 13. STAFF / GALLERY / PUBLIC NOTICES ================= */'
+          function_start = text.index(function_start_marker)
+          function_end = text.index(function_end_marker, function_start)
+          text = text[:function_start] + '      /* Public personal-data collection is disabled pending policy approval. */\n\n' + text[function_end:]
+
+          text = text.replace('      window.submitHomeInquiry = submitHomeInquiry;\n', '')
+          text = text.replace('      window.submitPublicComment = submitPublicComment;\n', '')
+          text = text.replace('>개인정보처리방침</a>', '>개인정보 처리 안내(검토본)</a>')
+
+          forbidden = [
+              'id="widgetInquiryForm"',
+              'id="commentPublicForm"',
+              'submitHomeInquiry',
+              'submitPublicComment',
+              "getCollectionRef('inquiries').add",
+              "getCollectionRef('comments').add",
+              '상담 종료 후 1년',
+              '처리 완료 후 1년'
+          ]
+          remaining = [item for item in forbidden if item in text]
+          if remaining:
+              raise SystemExit('Personal data collection residue remains: ' + ', '.join(remaining))
+
+          required = [
+              'id="inquiryPreparationNotice"',
+              'id="commentPreparationNotice"',
+              'href="tel:051-867-7500"',
+              '온라인 입원문의 준비 중',
+              '온라인 댓글 기능 준비 중',
+              'const routeFromHash',
+              'const renderStaff',
+              'const renderGallery',
+              'const renderNotice'
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit('Required public content missing: ' + ', '.join(missing))
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate public module JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          start = text.index('<script type="module">') + len('<script type="module">')
+          end = text.index('</script>', start)
+          Path('/tmp/public-index.mjs').write_text(text[start:end], encoding='utf-8')
+          PY
+          node --check /tmp/public-index.mjs
+
+      - name: Commit safety change
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Disable unapproved personal data collection'
+          git push origin HEAD:agent/production-ready-refactor
