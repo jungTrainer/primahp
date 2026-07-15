@@ -1,0 +1,10 @@
+[
+  {
+    "id": "certification-placeholder-1",
+    "title": "실제 인증·평가 자료 등록 예정",
+    "year": "확인 필요",
+    "desc": "인증서, 적정성 평가 결과, 표창 또는 협약 증빙을 확인한 뒤 관리자 화면에서 등록해 주세요.",
+    "photo": "assets/certificate-placeholder.svg",
+    "order": 10
+  }
+]
