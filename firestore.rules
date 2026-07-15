@@ -31,6 +31,7 @@ service cloud.firestore {
         && request.resource.data.message.size() <= 1000
         && request.resource.data.status == '신규'
         && request.resource.data.followUp == false
+        && request.resource.data.memos is list
         && request.resource.data.memos.size() == 0;
     }
 
@@ -58,23 +59,19 @@ service cloud.firestore {
     }
 
     match /artifacts/{appId}/public/data/notices/{noticeId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /artifacts/{appId}/public/data/staff/{staffId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /artifacts/{appId}/public/data/gallery/{albumId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /artifacts/{appId}/public/data/page-content/{contentId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /{document=**} {
