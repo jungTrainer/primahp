@@ -42,3 +42,5 @@ jobs:
           git add index.html
           git commit -m 'Apply privacy consent and hash routing updates'
           git push origin HEAD:agent/privacy-and-routing
+
+# Triggered after workflow registration so the branch patch runs once.
