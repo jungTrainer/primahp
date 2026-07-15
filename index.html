@@ -1105,8 +1105,7 @@
             </div>
             <p class="text-xs text-slate-500 leading-relaxed border-t border-brand-border pt-2">${escapeHtml(s.bio)}</p>
           `;
-          grid.appendChild(card););
-          }
+          grid.appendChild(card);
         });
       };
 
@@ -1142,8 +1141,7 @@
               <p class="text-xs text-slate-500">${escapeHtml(a.desc)}</p>
             </div>
           `;
-          grid.appendChild(card););
-          }
+          grid.appendChild(card);
         });
       };
 
@@ -1172,8 +1170,7 @@
           document.getElementById(`notice-click-${n.id}`).addEventListener('click', (e) => {
             e.stopPropagation();
             openNoticePublicView(n.id);
-          }););
-          }
+          });
         });
         
         const select = document.getElementById('commentNoticeSelect');
