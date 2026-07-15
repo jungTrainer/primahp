@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function validConsent(version) {
+      return request.resource.data.privacyConsent == true
+        && request.resource.data.consentedAt is string
+        && request.resource.data.privacyPolicyVersion == version;
+    }
+
+    function validInquiryCreate() {
+      return validConsent('2026-07-15')
+        && request.resource.data.sensitiveConsent == true
+        && request.resource.data.receiptNo is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 10
+        && request.resource.data.phone.size() <= 20
+        && request.resource.data.type in ['luxury-2', 'luxury-3', 'standard-4', 'standard-5']
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 1
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.status == '신규'
+        && request.resource.data.followUp == false
+        && request.resource.data.memos is list
+        && request.resource.data.memos.size() == 0;
+    }
+
+    function validCommentCreate() {
+      return validConsent('2026-07-15')
+        && request.resource.data.author is string
+        && request.resource.data.author.size() >= 1
+        && request.resource.data.author.size() <= 50
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() >= 1
+        && request.resource.data.comment.size() <= 500
+        && request.resource.data.noticeId is string
+        && request.resource.data.noticeTitle is string
+        && request.resource.data.isAnswered == false;
+    }
+
+    match /artifacts/{appId}/public/data/inquiries/{inquiryId} {
+      allow create: if isSignedIn() && validInquiryCreate();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /artifacts/{appId}/public/data/comments/{commentId} {
+      allow create: if isSignedIn() && validCommentCreate();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /artifacts/{appId}/public/data/notices/{noticeId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /artifacts/{appId}/public/data/staff/{staffId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /artifacts/{appId}/public/data/gallery/{albumId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /artifacts/{appId}/public/data/page-content/{contentId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
