@@ -769,8 +769,6 @@
           if (list.length > 0) {
             notices = list;
             renderNotice();
-          } else {
-            notices.forEach(n => getCollectionRef('notices').doc(n.id).set(n));
           }
         }, e => console.error(e));
 
@@ -780,8 +778,6 @@
           if (list.length > 0) {
             workingStaff = list;
             renderStaff();
-          } else {
-            workingStaff.forEach(s => getCollectionRef('staff').doc(s.id).set(s));
           }
         }, e => console.error(e));
 
@@ -791,8 +787,6 @@
           if (list.length > 0) {
             albums = list;
             renderGallery();
-          } else {
-            albums.forEach(a => getCollectionRef('gallery').doc(a.id).set(a));
           }
         }, e => console.error(e));
 
@@ -900,64 +894,6 @@
         document.getElementById('text-guide-notetext').innerHTML = siteEditableContents.guideNote;
         document.getElementById('text-directions-subway').textContent = siteEditableContents.dirSubway;
         document.getElementById('text-directions-bus').textContent = siteEditableContents.dirBus;
-      };
-
-      /* ================= 8. INLINE SECTIONS EDITORS ================= */
-      const toggleSectionEdit = (sectionId) => {
-        const editor = document.getElementById(`editor-${sectionId}`);
-        const content = document.getElementById(`content-${sectionId}`);
-        if (!editor || !content) return;
-
-        if (editor.classList.contains('hidden')) {
-          editor.classList.remove('hidden');
-          content.classList.add('editing-focus');
-          if (sectionId === 'home-hero') {
-            document.getElementById('edit-home-title').value = siteEditableContents.homeTitle.replace(/<br>/g, "\n");
-            document.getElementById('edit-home-desc').value = siteEditableContents.homeDesc;
-          } else if (sectionId === 'about-greetings') {
-            document.getElementById('edit-about-title').value = siteEditableContents.aboutTitle;
-            document.getElementById('edit-about-body').value = siteEditableContents.aboutBody;
-          } else if (sectionId === 'guide-notes') {
-            document.getElementById('edit-guide-notetext').value = siteEditableContents.guideNote;
-          } else if (sectionId === 'directions-text') {
-            document.getElementById('edit-directions-subway').value = siteEditableContents.dirSubway;
-            document.getElementById('edit-directions-bus').value = siteEditableContents.dirBus;
-          }
-        } else {
-          editor.classList.add('hidden');
-          content.classList.remove('editing-focus');
-        }
-      };
-
-      const applySectionEdit = async (sectionId) => {
-        let updatePayload = {};
-
-        if (sectionId === 'home-hero') {
-          // 저장 시점에 이스케이프를 이중 적용하지 않고 원본 문자열을 보존
-          siteEditableContents.homeTitle = document.getElementById('edit-home-title').value.replace(/\n/g, "<br>");
-          siteEditableContents.homeDesc = document.getElementById('edit-home-desc').value;
-          updatePayload = { homeTitle: siteEditableContents.homeTitle, homeDesc: siteEditableContents.homeDesc };
-        } else if (sectionId === 'about-greetings') {
-          siteEditableContents.aboutTitle = document.getElementById('edit-about-title').value;
-          siteEditableContents.aboutBody = document.getElementById('edit-about-body').value;
-          updatePayload = { aboutTitle: siteEditableContents.aboutTitle, aboutBody: siteEditableContents.aboutBody };
-        } else if (sectionId === 'guide-notes') {
-          siteEditableContents.guideNote = document.getElementById('edit-guide-notetext').value;
-          updatePayload = { guideNote: siteEditableContents.guideNote };
-        } else if (sectionId === 'directions-text') {
-          siteEditableContents.dirSubway = document.getElementById('edit-directions-subway').value;
-          siteEditableContents.dirBus = document.getElementById('edit-directions-bus').value;
-          updatePayload = { dirSubway: siteEditableContents.dirSubway, dirBus: siteEditableContents.dirBus };
-        }
-
-        if (isFirebaseReady && authUser && isAdminLoggedIn) {
-          await getCollectionRef('page-content').doc(sectionId).set(updatePayload, { merge: true });
-        } else {
-          applyLiveTextsToDOM();
-        }
-
-        toggleSectionEdit(sectionId);
-        showToast("해당 섹션 문구가 실시간으로 수정 적용 완료되었습니다.");
       };
 
       /* ================= 10. PUBLIC USER INPUTS & VALIDATION ================= */
