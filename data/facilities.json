@@ -2,25 +2,37 @@
   {
     "id": "facility-room",
     "category": "병동 시설",
-    "title": "쾌적한 병실",
-    "desc": "실제 병실 사진과 병상 구성, 편의시설 정보를 등록해 주세요.",
-    "photo": "assets/facility-placeholder.svg",
+    "title": "쾌적한 병실 환경",
+    "desc": "환자의 안전과 편안한 입원 생활을 고려한 병실 예시입니다. 실제 병실 사진과 병상 구성 정보로 교체해 주세요.",
+    "photo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1400&q=82",
+    "photoPos": "50% 50%",
+    "isSample": true,
+    "sourceName": "Unsplash",
+    "sourceUrl": "https://unsplash.com/",
     "order": 10
   },
   {
     "id": "facility-rehab",
     "category": "재활 시설",
     "title": "재활치료실",
-    "desc": "운동치료 장비와 재활 프로그램이 운영되는 공간을 보여주세요.",
-    "photo": "assets/facility-placeholder.svg",
+    "desc": "운동치료와 기능 회복 훈련이 진행되는 공간의 예시입니다. 실제 장비와 치료실 사진으로 교체해 주세요.",
+    "photo": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1400&q=82",
+    "photoPos": "50% 45%",
+    "isSample": true,
+    "sourceName": "Unsplash",
+    "sourceUrl": "https://unsplash.com/",
     "order": 20
   },
   {
     "id": "facility-lounge",
     "category": "생활 시설",
     "title": "휴게 및 프로그램 공간",
-    "desc": "환자와 보호자가 이용하는 휴게공간과 프로그램실을 소개해 주세요.",
-    "photo": "assets/facility-placeholder.svg",
+    "desc": "환자와 보호자가 휴식하고 프로그램에 참여할 수 있는 공용 공간의 예시입니다.",
+    "photo": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=82",
+    "photoPos": "50% 50%",
+    "isSample": true,
+    "sourceName": "Unsplash",
+    "sourceUrl": "https://unsplash.com/",
     "order": 30
   }
 ]
