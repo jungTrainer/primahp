@@ -63,6 +63,7 @@ main p, main li {
 }
 .prima-lightbox.is-open { display: flex; }
 .prima-lightbox img { max-height: 88vh; max-width: 94vw; object-fit: contain; border-radius: 1rem; }
+body:has(#about:not(.hidden)) #certifications { display: block !important; }
 @media (max-width: 767px) {
   .prima-container { width: min(100% - 2rem, 80rem); }
   #hero-title br { display: none; }
