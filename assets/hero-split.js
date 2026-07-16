@@ -1,74 +1,32 @@
 (() => {
   'use strict';
-
-  function openSection(view) {
-    const menuButton = document.querySelector(`[data-view="${view}"]`);
-    if (menuButton) menuButton.click();
-    else location.hash = view;
-  }
-
-  function applySplitHero() {
-    const home = document.getElementById('home');
-    if (!home || home.dataset.splitHero === 'true') return;
-
-    const currentImage = document.getElementById('hero-image');
-    const currentEyebrow = document.getElementById('hero-eyebrow');
-    const currentTitle = document.getElementById('hero-title');
-    const currentDescription = document.getElementById('hero-description');
-
-    const imageSrc = currentImage?.getAttribute('src') || 'assets/home.png';
-    const imageAlt = currentImage?.getAttribute('alt') || '프리마요양병원 전경';
-    const eyebrow = currentEyebrow?.textContent || '소통 · 공감 · 화합 · 행복';
-    const title = currentTitle?.innerHTML || '내 부모님처럼 따뜻하게<br>정성껏 보살펴 드립니다.';
-    const description = currentDescription?.textContent || '환자와 가족이 안심할 수 있도록 진료, 간호, 재활, 생활 환경을 세심하게 살피겠습니다.';
-
-    home.dataset.splitHero = 'true';
-    home.className = 'overflow-hidden border-b border-brand-border bg-white';
-    home.innerHTML = `
-      <div class="mx-auto max-w-[1500px] px-5 py-12 sm:px-8 md:py-16 lg:px-10 lg:py-20">
-        <div class="grid min-h-[650px] items-center gap-12 lg:grid-cols-[0.93fr_1.07fr] xl:gap-20">
-          <div class="order-2 lg:order-1 lg:pr-4">
-            <span id="hero-eyebrow" class="section-kicker inline-flex rounded-full border border-brand-border bg-brand-lightBg px-4 py-2 text-[11px] font-black text-brand-blue">${eyebrow}</span>
-            <h1 id="hero-title" class="font-serif-warm mt-7 max-w-2xl text-4xl font-bold leading-[1.22] tracking-tight text-brand-navy sm:text-5xl lg:text-[3.7rem]">${title}</h1>
-            <p id="hero-description" class="mt-6 max-w-xl text-sm leading-7 text-slate-500 sm:text-base sm:leading-8">${description}</p>
-
-            <div class="mt-9 flex flex-wrap gap-3">
-              <button id="hero-facilities-button" type="button" class="rounded-2xl bg-slate-950 px-7 py-4 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-brand-blue">병원 둘러보기</button>
-              <a href="tel:051-867-7500" class="rounded-2xl border border-brand-border bg-white px-7 py-4 text-sm font-black text-brand-navy shadow-sm transition hover:border-brand-blue hover:text-brand-blue"><i class="fa-solid fa-phone mr-2 text-emerald-600"></i>전화 상담</a>
-            </div>
-
-            <div class="mt-14 grid max-w-2xl grid-cols-3 divide-x divide-brand-border border-t border-brand-border pt-8">
-              <div class="pr-4">
-                <strong class="font-serif-warm block text-lg font-bold text-brand-navy sm:text-xl">연산역 인근</strong>
-                <span class="mt-2 block text-[11px] text-slate-400">편리한 접근성</span>
-              </div>
-              <div class="px-4 sm:px-6">
-                <strong class="font-serif-warm block text-lg font-bold text-brand-navy sm:text-xl">양·한방 협진</strong>
-                <span class="mt-2 block text-[11px] text-slate-400">통합 진료 지원</span>
-              </div>
-              <div class="pl-4 sm:pl-6">
-                <strong class="font-serif-warm block text-lg font-bold text-brand-navy sm:text-xl">재활·간호</strong>
-                <span class="mt-2 block text-[11px] text-slate-400">환자 중심 케어</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="order-1 lg:order-2">
-            <div class="relative mx-auto max-w-3xl overflow-hidden rounded-[2.25rem] bg-slate-100 shadow-[0_28px_70px_rgba(15,23,42,.16)] lg:min-h-[650px]">
-              <img id="hero-image" src="${imageSrc}" alt="${imageAlt}" class="h-[470px] w-full object-cover sm:h-[600px] lg:absolute lg:inset-0 lg:h-full">
-              <div class="pointer-events-none absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-black/5"></div>
-              <div id="hero-placeholder-badge" class="hidden"></div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-    document.getElementById('hero-facilities-button')?.addEventListener('click', () => openSection('facilities'));
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applySplitHero, { once: true });
-  } else {
-    applySplitHero();
-  }
+  const APP_ID = window.__app_id || 'prima-care-hospital-2026';
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const ROUTES = {
+    '병원소개': [['about','인사말'],['staff','의료진 소개'],['facilities','병원 시설']],
+    '진료안내': [['departments','진료·케어']],
+    '병원생활': [['programs','프로그램'],['meals','주간 식단표'],['gallery','가족갤러리']],
+    '이용안내': [['admission','입·퇴원 안내'],['guide','면회·제증명'],['directions','오시는 길']],
+    '병원소식': [['notice','공지사항'],['admission','온라인 문의']]
+  };
+  let db = null, departments = [], meals = [];
+  function injectCss(){if(document.querySelector('link[href="assets/site-v2.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='assets/site-v2.css';document.head.appendChild(l)}
+  function initDb(){if(!window.firebase||!window.__firebase_config)return;try{const app=firebase.apps.length?firebase.app():firebase.initializeApp(window.__firebase_config);db=app.firestore()}catch(_){}}
+  async function json(path,fallback){try{const r=await fetch(path);if(!r.ok)throw Error();return r.json()}catch(_){return fallback}}
+  async function cloud(name,fallback){if(!db)return fallback;try{const s=await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(name).get();return s.empty?fallback:s.docs.map(d=>({id:d.id,...d.data()}))}catch(_){return fallback}}
+  function brand(){const a=document.querySelector('header a[href="#home"]');if(!a)return;a.className='flex items-center gap-3';a.innerHTML='<span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1"><img src="assets/logo.png" alt="프리마요양병원 심벌 로고" class="h-full w-full object-contain"></span><span><strong class="font-serif-warm block text-[clamp(1.15rem,1rem+0.7vw,1.55rem)] text-brand-navy">프리마요양병원</strong><small class="block text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">PRIMA HOSPITAL</small></span>'}
+  function dropdownNav(){const desktop=document.querySelector('header nav.hidden'),mobile=$('mobile-menu')?.querySelector('div');if(desktop){desktop.className='hidden items-center gap-5 text-sm font-bold text-slate-600 lg:flex';desktop.innerHTML=`<button data-view="home" class="py-2 hover:text-brand-blue">홈</button>${Object.entries(ROUTES).map(([g,items])=>`<div class="prima-dropdown"><button type="button" class="py-2 hover:text-brand-blue">${g}</button><div class="prima-dropdown-menu">${items.map(([v,l])=>`<button type="button" data-view="${v}">${l}</button>`).join('')}</div></div>`).join('')}`}if(mobile){mobile.className='grid gap-0';mobile.innerHTML=`<button data-view="home" class="py-3 text-left">홈</button>${Object.entries(ROUTES).map(([g,items])=>`<div class="prima-mobile-group"><button type="button" class="prima-mobile-toggle flex w-full items-center justify-between py-3 text-left">${g}<i class="fa-solid fa-chevron-down text-[10px]"></i></button><div class="prima-mobile-submenu">${items.map(([v,l])=>`<button type="button" data-view="${v}" class="py-2 text-left text-sm text-slate-500">${l}</button>`).join('')}</div></div>`).join('')}`;mobile.querySelectorAll('.prima-mobile-toggle').forEach(b=>b.onclick=()=>b.parentElement.classList.toggle('is-open'))}document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>openView(b.dataset.view)))}
+  function openView(view){location.hash=view;setTimeout(()=>{const target=$(view);if(target&&target.classList.contains('hidden'))document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('hidden',s.id!==view))},0)}
+  function splitHero(){const home=$('home');if(!home||home.dataset.v2)return;const oldImage=$('hero-image'),oldEyebrow=$('hero-eyebrow'),oldTitle=$('hero-title'),oldDesc=$('hero-description');const image=oldImage?.getAttribute('src')||'assets/home.png',alt=oldImage?.getAttribute('alt')||'프리마요양병원 전경',eyebrow=oldEyebrow?.textContent||'소통 · 공감 · 화합 · 행복',title=oldTitle?.innerHTML||'내 부모님처럼 따뜻하게<br>정성껏 보살펴 드립니다.',desc=oldDesc?.textContent||'환자와 가족이 안심할 수 있도록 진료, 간호, 재활, 생활 환경을 세심하게 살피겠습니다.';home.dataset.v2='1';home.className='overflow-hidden border-b border-brand-border bg-white';home.innerHTML=`<div class="prima-container py-[clamp(3rem,7vw,6rem)]"><div class="grid min-h-[640px] items-center gap-10 lg:grid-cols-[.92fr_1.08fr] xl:gap-16"><div class="order-2 min-w-0 lg:order-1"><span id="hero-eyebrow" class="section-kicker inline-flex rounded-full border border-brand-border bg-brand-lightBg px-4 py-2 text-[11px] font-black text-brand-blue">${esc(eyebrow)}</span><h1 id="hero-title" class="font-serif-warm mt-7 max-w-2xl font-bold tracking-tight text-brand-navy">${title.replace(/<br\s*\/?\s*>/gi,'<br class="hidden sm:block">')}</h1><p id="hero-description" class="pretty-text mt-6 max-w-prose leading-8 text-slate-500">${esc(desc)}</p><div class="mt-9 flex flex-wrap gap-3"><button type="button" data-view="facilities" class="rounded-2xl bg-slate-950 px-7 py-4 text-sm font-black text-white shadow-lg">병원 둘러보기</button><a href="tel:051-867-7500" class="rounded-2xl border border-brand-border bg-white px-7 py-4 text-sm font-black text-brand-navy"><i class="fa-solid fa-phone mr-2 text-emerald-600"></i>전화 상담</a><button type="button" data-view="admission" class="rounded-2xl border border-brand-border bg-white px-7 py-4 text-sm font-black text-brand-navy">온라인 문의</button></div><div class="mt-14 grid grid-cols-3 divide-x divide-brand-border border-t border-brand-border pt-8"><div class="pr-3"><strong class="font-serif-warm block text-[clamp(1rem,.85rem+.7vw,1.3rem)]">연산역 인근</strong><span class="mt-2 block text-[11px] text-slate-400">편리한 접근성</span></div><div class="px-3 sm:px-6"><strong class="font-serif-warm block text-[clamp(1rem,.85rem+.7vw,1.3rem)]">양·한방 협진</strong><span class="mt-2 block text-[11px] text-slate-400">통합 진료 지원</span></div><div class="pl-3 sm:pl-6"><strong class="font-serif-warm block text-[clamp(1rem,.85rem+.7vw,1.3rem)]">재활·간호</strong><span class="mt-2 block text-[11px] text-slate-400">환자 중심 케어</span></div></div></div><div class="order-1 min-w-0 lg:order-2"><div class="relative mx-auto max-w-3xl overflow-hidden rounded-[2.25rem] bg-slate-100 shadow-[0_28px_70px_rgba(15,23,42,.16)] lg:min-h-[650px]"><img id="hero-image" src="${image}" alt="${esc(alt)}" class="h-[440px] w-full object-cover sm:h-[580px] lg:absolute lg:inset-0 lg:h-full"><div class="pointer-events-none absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-black/5"></div><div id="hero-placeholder-badge" class="hidden"></div></div></div></div></div>`;home.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>openView(b.dataset.view))}
+  function ensureDepartments(){if($('departments'))return;const s=document.createElement('section');s.id='departments';s.className='prima-section bg-brand-lightBg';s.innerHTML='<div class="prima-container"><div class="mb-10"><span class="section-kicker text-xs font-black text-brand-blue">Medical Care</span><h2 class="font-serif-warm mt-2 font-bold text-brand-navy">진료·케어 안내</h2><p class="pretty-text mt-4 max-w-prose text-slate-600">진료과와 환자 생활 지원 서비스를 한눈에 확인할 수 있습니다.</p></div><div id="department-grid" class="prima-card-grid"></div></div>';$('facilities')?.parentNode?.insertBefore(s,$('facilities'))}
+  function renderDepartments(){const g=$('department-grid');if(!g)return;g.innerHTML=departments.sort((a,b)=>(a.order||0)-(b.order||0)).map(d=>`<article class="overflow-hidden rounded-3xl border border-brand-border bg-white shadow-sm"><div class="aspect-[16/10] overflow-hidden bg-slate-100"><img src="${esc(d.image||'assets/facility-placeholder.svg')}" alt="${esc(d.name)} 대표 이미지" class="h-full w-full object-cover"></div><div class="p-6"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-sky text-brand-blue"><i class="${esc(d.icon||'fa-solid fa-stethoscope')}"></i></span><h3 class="font-serif-warm text-xl font-bold text-brand-navy">${esc(d.name)}</h3></div><p class="mt-4 text-slate-600">${esc(d.summary)}</p><button type="button" class="dept-toggle mt-5 text-sm font-black text-brand-blue">자세히 보기 <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i></button><div class="dept-detail hidden whitespace-pre-line pt-4 text-sm leading-7 text-slate-500">${esc(d.detail)}</div></div></article>`).join('');g.querySelectorAll('.dept-toggle').forEach(b=>b.onclick=()=>{const d=b.nextElementSibling;d.classList.toggle('hidden');b.innerHTML=d.classList.contains('hidden')?'자세히 보기 <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>':'접기 <i class="fa-solid fa-chevron-up ml-1 text-[10px]"></i>'})}
+  function programSection(){if($('programs'))return;const s=document.createElement('section');s.id='programs';s.className='prima-section bg-white';s.innerHTML='<div class="prima-container"><div class="mb-10"><span class="section-kicker text-xs font-black text-brand-blue">Hospital Life</span><h2 class="font-serif-warm mt-2 font-bold text-brand-navy">병원생활 프로그램</h2><p class="mt-4 max-w-prose text-slate-600">인지·정서 활동과 계절 행사를 통해 편안하고 활기찬 병원생활을 지원합니다.</p></div><div class="prima-card-grid">'+[['fa-brain','인지 프로그램','기억력과 집중력 유지에 도움이 되는 활동을 진행합니다.'],['fa-music','음악·미술 활동','음악 감상, 노래, 미술 활동으로 정서적 안정을 돕습니다.'],['fa-seedling','원예 활동','식물을 가꾸며 감각 자극과 성취감을 경험합니다.'],['fa-person-walking','신체 활동','환자의 상태에 맞춘 가벼운 체조와 움직임 활동을 제공합니다.'],['fa-calendar-days','계절 행사','생신 행사와 명절·계절 프로그램을 운영합니다.']].map(([i,t,x])=>`<article class="rounded-3xl border border-brand-border bg-brand-lightBg p-7"><i class="fa-solid ${i} text-2xl text-brand-blue"></i><h3 class="mt-5 font-bold text-brand-navy">${t}</h3><p class="mt-3 text-slate-500">${x}</p></article>`).join('')+'</div></div>';$('gallery')?.parentNode?.insertBefore(s,$('gallery'))}
+  function admissionSection(){const s=$('admission');if(!s||s.dataset.v2)return;s.dataset.v2='1';const inSteps=[['입원상담','방문상담·전화상담·온라인상담'],['입원검토','타 병원 소견서와 복용 중인 약 처방전 검토'],['진료','전문의 진료 후 입원 가능 여부 결정 및 병실 배정'],['입원수속','원무과에서 입원서약서 작성 등 수속 진행'],['검사','환자 상태에 필요한 처치와 검사'],['입원','필요물품 준비와 병실·생활 안내']],outSteps=[['퇴원 결정','주치의 상담 후 퇴원 여부 결정'],['퇴원안내','해당 병동에서 절차와 준비사항 안내'],['수납','원무과에서 입원비 수납'],['병동 간호과','영수증 제출 후 퇴원약·주의사항·내원 일정 안내'],['귀가','퇴원약과 주의사항 확인 후 귀가']];const cards=list=>`<div class="prima-step-grid">${list.map((x,i)=>`<article class="rounded-3xl border border-brand-border bg-white p-6 shadow-sm"><span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-sm font-black text-white">${i+1}</span><h3 class="mt-5 font-bold text-brand-navy">${x[0]}</h3><p class="mt-3 text-sm leading-7 text-slate-500">${x[1]}</p></article>`).join('')}</div>`;const form=s.querySelector('#inquiry-form')?.closest('.rounded-3xl');s.className='prima-section bg-brand-lightBg';s.innerHTML=`<div class="prima-container"><div class="mb-10"><span class="section-kicker text-xs font-black text-brand-blue">Admission & Discharge</span><h2 class="font-serif-warm mt-2 font-bold text-brand-navy">입·퇴원 안내</h2></div><div class="rounded-[2rem] bg-white p-6 shadow-sm sm:p-9"><h3 class="font-serif-warm text-2xl font-bold text-brand-navy">입원 절차</h3><div class="mt-7">${cards(inSteps)}</div><div class="mt-7 rounded-2xl bg-brand-lightBg p-6 text-sm leading-8 text-slate-600"><strong class="text-brand-navy">입원 시 참고</strong><p class="mt-2">전문 상담사가 질환과 병원 정보를 안내하고 담당 의사의 상담·진료 후 입원을 결정합니다. 건강보험증 또는 신분증, 의료급여의뢰서(해당자), 진단서, 복용 중인 약 처방전을 준비해 원무과에서 입원서약서를 작성합니다. 토요일·일요일·공휴일은 입원상담이 운영되지 않습니다.</p></div></div><div class="mt-8 rounded-[2rem] bg-white p-6 shadow-sm sm:p-9"><h3 class="font-serif-warm text-2xl font-bold text-brand-navy">퇴원 절차</h3><div class="mt-7">${cards(outSteps)}</div><div class="mt-7 rounded-2xl bg-brand-lightBg p-6 text-sm leading-8 text-slate-600"><strong class="text-brand-navy">퇴원 시 참고</strong><p class="mt-2">입원비 수납 후 영수증을 병동 간호사실에 제출하고 퇴원약과 주의사항을 안내받습니다. 다음 진료일 예약이 가능하며, 진단서 또는 입·퇴원확인서가 필요한 경우 퇴원 결정 후 병동 간호사실에 먼저 신청한 뒤 원무과에서 발급받습니다.</p></div></div><div id="online-inquiry-slot" class="mt-8"></div></div>`;if(form)$('online-inquiry-slot').appendChild(form)}
+  function aboutGrouping(){[$('about'),$('certifications'),$('staff'),$('facilities')].forEach(x=>{if(x)x.dataset.group='about'})}
+  function mealsSection(){if($('meals'))return;const s=document.createElement('section');s.id='meals';s.className='prima-section bg-brand-lightBg';s.innerHTML='<div class="prima-container"><div class="mb-10"><span class="section-kicker text-xs font-black text-brand-blue">Weekly Menu</span><h2 class="font-serif-warm mt-2 font-bold text-brand-navy">주간 식단표</h2><p class="mt-4 max-w-prose text-slate-600">식단표와 실제 제공 음식 사진을 주차별로 확인할 수 있습니다.</p></div><div id="meal-list" class="space-y-8"></div><button id="meal-more" type="button" class="mx-auto mt-8 hidden rounded-xl border border-brand-border bg-white px-6 py-3 text-sm font-bold">더보기</button></div><div id="meal-lightbox" class="prima-lightbox"><button type="button" class="absolute right-5 top-5 text-3xl text-white" aria-label="닫기">×</button><img alt="확대 이미지"></div>';$('gallery')?.parentNode?.insertBefore(s,$('gallery'))}
+  function renderMeals(){const l=$('meal-list');if(!l)return;let visible=6;const draw=()=>{l.innerHTML=meals.slice(0,visible).map(m=>`<article class="overflow-hidden rounded-[2rem] border border-brand-border bg-white shadow-sm"><div class="p-6 sm:p-8"><div class="flex flex-wrap items-end justify-between gap-3"><div><span class="text-xs font-bold text-brand-blue">${esc(m.periodStart||'')}</span><h3 class="font-serif-warm mt-2 text-2xl font-bold text-brand-navy">${esc(m.title||'주간 식단')}</h3></div><p class="text-sm text-slate-500">${esc(m.note||'')}</p></div><button class="meal-image mt-6 block w-full overflow-hidden rounded-2xl border bg-slate-50" data-src="${esc(m.menuImage||'assets/facility-placeholder.svg')}"><img src="${esc(m.menuImage||'assets/facility-placeholder.svg')}" alt="${esc(m.title)} 식단표" class="max-h-[720px] w-full object-contain"></button>${Array.isArray(m.photos)&&m.photos.length?`<div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${m.photos.map(p=>`<button class="meal-image aspect-square overflow-hidden rounded-xl" data-src="${esc(typeof p==='string'?p:p.url)}"><img src="${esc(typeof p==='string'?p:p.url)}" alt="음식 사진" class="h-full w-full object-cover"></button>`).join('')}</div>`:''}</div></article>`).join('');$('meal-more')?.classList.toggle('hidden',visible>=meals.length);bindLightbox()};$('meal-more').onclick=()=>{visible+=6;draw()};draw()}
+  function bindLightbox(){const b=$('meal-lightbox');if(!b)return;document.querySelectorAll('.meal-image').forEach(x=>x.onclick=()=>{b.querySelector('img').src=x.dataset.src;b.classList.add('is-open')});b.querySelector('button').onclick=()=>b.classList.remove('is-open');b.onclick=e=>{if(e.target===b)b.classList.remove('is-open')}}
+  async function run(){injectCss();initDb();brand();dropdownNav();splitHero();ensureDepartments();programSection();admissionSection();aboutGrouping();mealsSection();departments=await cloud('departments',await json('data/departments.json',[]));meals=await cloud('meals',await json('data/meals.json',[]));meals.sort((a,b)=>String(b.periodStart||'').localeCompare(String(a.periodStart||'')));renderDepartments();renderMeals()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
 })();
