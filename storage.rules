@@ -2,30 +2,13 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn(){ return request.auth != null; }
-    function isAdmin(){
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.active == true;
-    }
-    function isMealPublisher(){
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/mealPublishers/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/mealPublishers/$(request.auth.uid)).data.active == true;
-    }
-    function image(maxSize){
-      return request.resource != null
-        && request.resource.size < maxSize
-        && request.resource.contentType.matches('image/(jpeg|png|webp)');
-    }
-
-    match /public/meals/{allPaths=**}{
-      allow read: if true;
-      allow write: if (isAdmin() || isMealPublisher()) && image(2 * 1024 * 1024);
-    }
-    match /public/{allPaths=**}{
-      allow read: if true;
-      allow write: if isAdmin() && image(5 * 1024 * 1024);
-    }
+    function isAdmin(){ return signedIn() && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid)) && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.active == true; }
+    function isMealPublisher(){ return signedIn() && firestore.exists(/databases/(default)/documents/mealPublishers/$(request.auth.uid)) && firestore.get(/databases/(default)/documents/mealPublishers/$(request.auth.uid)).data.active == true; }
+    function image(maxSize){ return request.resource != null && request.resource.size < maxSize && request.resource.contentType.matches('image/(jpeg|png|webp)'); }
+    function document(maxSize){ return request.resource != null && request.resource.size < maxSize && request.resource.contentType.matches('(application/pdf|text/plain|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document|application/vnd.ms-excel|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)'); }
+    match /public/meals/{allPaths=**}{ allow read: if true; allow write: if (isAdmin() || isMealPublisher()) && image(2 * 1024 * 1024); }
+    match /public/documents/{allPaths=**}{ allow read: if true; allow write: if isAdmin() && document(10 * 1024 * 1024); }
+    match /public/{allPaths=**}{ allow read: if true; allow write: if isAdmin() && image(5 * 1024 * 1024); }
     match /{allPaths=**}{ allow read, write: if false; }
   }
 }

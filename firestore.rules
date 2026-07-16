@@ -2,41 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn(){ return request.auth != null; }
-    function adminDoc(){ return get(/databases/$(database)/documents/admins/$(request.auth.uid)); }
-    function publisherDoc(){ return get(/databases/$(database)/documents/mealPublishers/$(request.auth.uid)); }
-    function isAdmin(){ return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && adminDoc().data.active == true; }
-    function isSuperAdmin(){ return isAdmin() && (!adminDoc().data.keys().hasAny(['role']) || adminDoc().data.role == 'super-admin'); }
-    function isMealPublisher(){ return signedIn() && exists(/databases/$(database)/documents/mealPublishers/$(request.auth.uid)) && publisherDoc().data.active == true; }
-    function validConsent(v){ return request.resource.data.privacyConsent == true && request.resource.data.consentedAt is string && request.resource.data.privacyPolicyVersion == v; }
-
-    match /admins/{uid}{
-      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
-      allow create, update, delete: if isSuperAdmin();
-    }
-    match /mealPublishers/{uid}{
-      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
-      allow create, update, delete: if isSuperAdmin();
-    }
-    match /accessRequests/{uid}{
-      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.status == 'pending';
-      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
-      allow update, delete: if isSuperAdmin();
-    }
-    match /artifacts/{appId}/public/data/inquiries/{id}{
-      allow create: if signedIn() && validConsent('2026-07-15') && request.resource.data.sensitiveConsent == true;
-      allow read, update, delete: if isAdmin();
-    }
-    match /artifacts/{appId}/public/data/comments/{id}{
-      allow create: if signedIn() && validConsent('2026-07-15');
-      allow read, update, delete: if isAdmin();
-    }
-    match /artifacts/{appId}/public/data/meals/{id}{
-      allow read: if true;
-      allow create, update, delete: if isAdmin() || isMealPublisher();
-    }
+    function adminPath(){ return /databases/$(database)/documents/admins/$(request.auth.uid); }
+    function adminDoc(){ return get(adminPath()); }
+    function isActiveAdmin(){ return signedIn() && exists(adminPath()) && adminDoc().data.active == true; }
+    function role(){ return isActiveAdmin() && adminDoc().data.keys().hasAny(['role']) ? adminDoc().data.role : 'superadmin'; }
+    function isSuperAdmin(){ return isActiveAdmin() && role() in ['superadmin','super-admin']; }
+    function isEditor(){ return isActiveAdmin() && role() in ['editor','content-admin','superadmin','super-admin']; }
+    function publisherPath(){ return /databases/$(database)/documents/mealPublishers/$(request.auth.uid); }
+    function isMealPublisher(){ return signedIn() && exists(publisherPath()) && get(publisherPath()).data.active == true; }
+    function validConsent(){ return request.resource.data.privacyConsent == true && request.resource.data.consentedAt is string && request.resource.data.privacyPolicyVersion == '2026-07-15'; }
+    function hasUpdatedAt(){ return request.resource.data.keys().hasAny(['updatedAt']); }
+    match /admins/{uid}{ allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin()); allow create, update, delete: if isSuperAdmin(); }
+    match /mealPublishers/{uid}{ allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin()); allow write: if isSuperAdmin(); }
+    match /accessRequests/{uid}{ allow create: if signedIn() && request.auth.uid == uid && request.resource.data.status == 'pending'; allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin()); allow update, delete: if isSuperAdmin(); }
+    match /artifacts/{appId}/public/data/inquiries/{id}{ allow create: if signedIn() && validConsent() && request.resource.data.sensitiveConsent == true; allow read, update, delete: if isActiveAdmin(); }
+    match /artifacts/{appId}/public/data/comments/{id}{ allow create: if signedIn() && validConsent(); allow read, update, delete: if isActiveAdmin(); }
+    match /artifacts/{appId}/public/data/drafts/{id}{ allow read: if isActiveAdmin(); allow create, update: if isEditor() && hasUpdatedAt(); allow delete: if isSuperAdmin(); }
+    match /artifacts/{appId}/public/data/meals/{id}{ allow read: if true; allow create, update, delete: if (isEditor() || isMealPublisher()) && hasUpdatedAt(); }
+    match /artifacts/{appId}/public/data/page-content/{id}{ allow read: if true; allow create, update, delete: if isSuperAdmin() && hasUpdatedAt(); }
     match /artifacts/{appId}/public/data/{collectionName}/{id}{
-      allow read: if collectionName in ['notices','staff','gallery','facilities','certifications','page-content','departments'];
-      allow create, update, delete: if isAdmin();
+      allow read: if collectionName in ['notices','staff','gallery','facilities','certifications','departments'];
+      allow create, update, delete: if collectionName in ['notices','staff','gallery','facilities','certifications','departments'] && isEditor() && hasUpdatedAt();
     }
     match /{document=**}{ allow read, write: if false; }
   }
