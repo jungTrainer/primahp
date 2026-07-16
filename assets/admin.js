@@ -121,7 +121,7 @@
       if (!u) { $('login').classList.remove('hidden'); $('panel').classList.add('hidden'); $('logout').classList.add('hidden'); return; }
       if (!await admin(u)) { await auth.signOut(); return loginMsg('관리자 권한이 없는 계정입니다.'); }
       user = u; $('login').classList.add('hidden'); $('panel').classList.remove('hidden'); $('logout').classList.remove('hidden');
-      buildPreview(); await loadHome(); await loadList();
+      buildPreview(); await loadHome(); await loadList(); await loadLayout();
     });
   }
   $('login-form').onsubmit = async e => { e.preventDefault(); try { await auth.signInWithEmailAndPassword($('email').value.trim(), $('password').value); } catch { loginMsg('로그인에 실패했습니다.'); } };
@@ -260,6 +260,55 @@
     // 드래그 정렬 초기화
     if (sortable) { sortable.destroy(); sortable = null; }
     if (window.Sortable && s.size) sortable = new Sortable(g, { animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', onEnd: saveOrder });
+  }
+
+  /* ---------------- 섹션 순서·표시 관리 ---------------- */
+  const SECDEF = [['about','병원소개'],['facilities','시설안내'],['staff','의료진·조직도'],['admission','입·퇴원안내'],['guide','이용안내'],['gallery','가족갤러리'],['notice','공지사항'],['directions','오시는 길']];
+  let layoutOrder = [], layoutHidden = [], secSortable = null;
+  function injectSectionPanel() {
+    if ($('section-panel')) return;
+    let card = document.createElement('form');
+    card.id = 'section-panel';
+    card.className = 'rounded-3xl bg-white p-6 shadow-sm';
+    card.innerHTML = '<h2 class="text-lg font-black">섹션 순서·표시</h2><p class="mt-1 text-xs text-slate-500">⠿ 를 잡고 드래그해 순서를 바꾸고, 체크를 끄면 홈페이지 메뉴에서 숨겨집니다. (홈은 항상 첫 번째)</p><ul id="sec-list" class="mt-4 space-y-2"></ul>';
+    let left = $('home-form').parentNode;
+    left.insertBefore(card, left.firstChild);
+    card.onsubmit = e => e.preventDefault();
+  }
+  async function loadLayout() {
+    injectSectionPanel();
+    let d = await col('page-content').doc('layout').get(), x = d.exists ? d.data() : {};
+    let keys = SECDEF.map(s => s[0]);
+    layoutOrder = Array.isArray(x.sectionsOrder) ? x.sectionsOrder.filter(k => keys.includes(k)) : keys.slice();
+    keys.forEach(k => { if (!layoutOrder.includes(k)) layoutOrder.push(k); });
+    layoutHidden = Array.isArray(x.sectionsHidden) ? x.sectionsHidden : [];
+    renderSectionPanel();
+  }
+  function renderSectionPanel() {
+    let label = Object.fromEntries(SECDEF), ul = $('sec-list');
+    if (!ul) return;
+    ul.innerHTML = '';
+    layoutOrder.forEach(k => {
+      let li = document.createElement('li');
+      li.dataset.key = k;
+      li.className = 'flex items-center gap-3 rounded-xl border border-brand-border bg-brand-light px-3 py-2';
+      li.innerHTML = `<span class="sec-handle cursor-grab text-slate-400" title="드래그">⠿</span><span class="flex-1 text-sm font-bold">${label[k] || k}</span><label class="flex items-center gap-1 text-[11px] text-slate-500"><input type="checkbox" class="sec-vis" ${layoutHidden.includes(k) ? '' : 'checked'}>표시</label>`;
+      ul.appendChild(li);
+    });
+    ul.querySelectorAll('.sec-vis').forEach(c => c.onchange = saveLayout);
+    if (secSortable) { secSortable.destroy(); secSortable = null; }
+    if (window.Sortable) secSortable = new Sortable(ul, { animation: 150, handle: '.sec-handle', ghostClass: 'sortable-ghost', onEnd: saveLayout });
+  }
+  async function saveLayout() {
+    let ul = $('sec-list'), items = [...ul.querySelectorAll('[data-key]')];
+    let order = items.map(li => li.dataset.key);
+    let hidden = items.filter(li => !li.querySelector('.sec-vis').checked).map(li => li.dataset.key);
+    layoutOrder = order; layoutHidden = hidden;
+    try {
+      await col('page-content').doc('layout').set({ sectionsOrder: order, sectionsHidden: hidden, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      note('섹션 순서·표시를 저장했습니다. 홈페이지에 반영됩니다.');
+      post('reload');
+    } catch (x) { note('섹션 설정 저장 실패: ' + (x.message || ''), 'error'); }
   }
 
   $('refresh').onclick = loadList;
