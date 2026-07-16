@@ -9,3 +9,12 @@ window.__firebase_config = {
   messagingSenderId: '1021859837693',
   appId: '1:1021859837693:web:c674b09f56f561ea6eb094'
 };
+
+// 홈 첫 화면을 좌측 문구·우측 병원 전경 이미지 구조로 구성합니다.
+// 관리자 미리보기에서도 같은 레이아웃을 사용합니다.
+(() => {
+  const script = document.createElement('script');
+  script.src = 'assets/hero-split.js';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
