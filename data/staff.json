@@ -1,3 +1,31 @@
 [
-  {"id":"sample-hong-gildong","department":"medical","name":"홍길동","position":"재활의학과 원장 · 샘플 프로필","bio":"환자의 현재 기능과 생활 목표를 함께 확인하고, 안전하게 일상으로 복귀할 수 있도록 진료와 재활치료를 연결합니다.","career":["○○대학교 의과대학 졸업","○○대학교병원 재활의학과 전공의 수료","재활의학과 전문의","대한재활의학회 정회원","노인 재활 및 보행장애 진료 경험"],"photo":"https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=1000&q=82","photoPos":"50% 35%","isSample":true,"order":10,"sourceName":"Unsplash","sourceUrl":"https://unsplash.com/"}
+  {
+    "id": "sample-hong-gildong",
+    "department": "medical",
+    "name": "홍길동",
+    "position": "재활의학과 원장 · 샘플 프로필",
+    "degree": "재활의학과 전문의",
+    "specialty": "노인 재활과 보행 기능 회복",
+    "bio": "환자의 현재 기능과 생활 목표를 함께 확인하고, 안전하게 일상으로 복귀할 수 있도록 진료와 재활치료를 연결합니다.",
+    "philosophy": "환자의 기능 회복뿐 아니라 일상에서의 편안함과 삶의 질까지 함께 살피는 진료를 지향합니다.",
+    "career": [
+      "○○대학교 의과대학 졸업",
+      "○○대학교병원 재활의학과 전공의 수료",
+      "재활의학과 전문의",
+      "대한재활의학회 정회원",
+      "노인 재활 및 보행장애 진료 경험"
+    ],
+    "specialties": [
+      "노인 재활",
+      "보행 훈련",
+      "일상생활 기능 회복"
+    ],
+    "photo": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=1000&q=82",
+    "photoPos": "50% 35%",
+    "active": true,
+    "isSample": true,
+    "order": 10,
+    "sourceName": "Unsplash",
+    "sourceUrl": "https://unsplash.com/"
+  }
 ]
