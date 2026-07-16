@@ -1,14 +1,15 @@
 // 브라우저용 Firebase 공개 설정만 불러옵니다.
 if (!window.__firebase_config) {
-  document.write('<script src="firebase-public-config.js?v=20260716-9"><\/script>');
+  document.write('<script src="firebase-public-config.js?v=20260716-10"><\/script>');
 }
 (() => {
   const page = location.pathname.split('/').pop() || 'index.html';
-  const load = src => { const s=document.createElement('script');s.src=`${src}?v=20260716-9`;s.defer=true;document.head.appendChild(s); };
+  const load = src => { const s=document.createElement('script');s.src=`${src}?v=20260716-10`;s.defer=true;document.head.appendChild(s); };
   if (page === 'index.html') {
     window.addEventListener('load',()=>{
       load('assets/ga4-loader.js');
       load('assets/site-content-enhancements.js');
+      load('assets/staff-profile.js');
       if (new URLSearchParams(location.search).get('preview') === '1') load('assets/site-editor-ui.js');
     },{once:true});
   }
