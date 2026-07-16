@@ -57,10 +57,6 @@
             <div class="relative mx-auto max-w-3xl overflow-hidden rounded-[2.25rem] bg-slate-100 shadow-[0_28px_70px_rgba(15,23,42,.16)] lg:min-h-[650px]">
               <img id="hero-image" src="${imageSrc}" alt="${imageAlt}" class="h-[470px] w-full object-cover sm:h-[600px] lg:absolute lg:inset-0 lg:h-full">
               <div class="pointer-events-none absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-black/5"></div>
-              <div class="absolute bottom-5 left-5 rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-                <strong class="block text-sm text-brand-navy">프리마요양병원</strong>
-                <span class="mt-1 block text-[10px] text-slate-500">부산 연제구 고분로 4</span>
-              </div>
               <div id="hero-placeholder-badge" class="hidden"></div>
             </div>
           </div>
