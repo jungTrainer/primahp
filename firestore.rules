@@ -1,90 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    function signedIn(){ return request.auth != null; }
+    function adminDoc(){ return get(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function publisherDoc(){ return get(/databases/$(database)/documents/mealPublishers/$(request.auth.uid)); }
+    function isAdmin(){ return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && adminDoc().data.active == true; }
+    function isSuperAdmin(){ return isAdmin() && (!adminDoc().data.keys().hasAny(['role']) || adminDoc().data.role == 'super-admin'); }
+    function isMealPublisher(){ return signedIn() && exists(/databases/$(database)/documents/mealPublishers/$(request.auth.uid)) && publisherDoc().data.active == true; }
+    function validConsent(v){ return request.resource.data.privacyConsent == true && request.resource.data.consentedAt is string && request.resource.data.privacyPolicyVersion == v; }
 
-    function hasAdminClaim() {
-      return isSignedIn() && request.auth.token.admin == true;
+    match /admins/{uid}{
+      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow create, update, delete: if isSuperAdmin();
     }
-
-    function hasAdminDocument() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    match /mealPublishers/{uid}{
+      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow create, update, delete: if isSuperAdmin();
     }
-
-    function isAdmin() {
-      return hasAdminClaim() || hasAdminDocument();
+    match /accessRequests/{uid}{
+      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.status == 'pending';
+      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow update, delete: if isSuperAdmin();
     }
-
-    function validConsent(version) {
-      return request.resource.data.privacyConsent == true
-        && request.resource.data.consentedAt is string
-        && request.resource.data.privacyPolicyVersion == version;
-    }
-
-    function validInquiryCreate() {
-      return validConsent('2026-07-15')
-        && request.resource.data.sensitiveConsent == true
-        && request.resource.data.receiptNo is string
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
-        && request.resource.data.name.size() <= 50
-        && request.resource.data.phone is string
-        && request.resource.data.phone.size() >= 10
-        && request.resource.data.phone.size() <= 20
-        && request.resource.data.type in ['luxury-2', 'luxury-3', 'standard-4', 'standard-5']
-        && request.resource.data.message is string
-        && request.resource.data.message.size() >= 1
-        && request.resource.data.message.size() <= 1000
-        && request.resource.data.status == '신규'
-        && request.resource.data.followUp == false
-        && request.resource.data.memos is list
-        && request.resource.data.memos.size() == 0;
-    }
-
-    function validCommentCreate() {
-      return validConsent('2026-07-15')
-        && request.resource.data.author is string
-        && request.resource.data.author.size() >= 1
-        && request.resource.data.author.size() <= 50
-        && request.resource.data.comment is string
-        && request.resource.data.comment.size() >= 1
-        && request.resource.data.comment.size() <= 500
-        && request.resource.data.noticeId is string
-        && request.resource.data.noticeTitle is string
-        && request.resource.data.isAnswered == false;
-    }
-
-    function isValidPublicContent() {
-      return request.resource.data.keys().hasAll(['updatedAt']);
-    }
-
-    match /admins/{uid} {
-      allow read: if isSignedIn() && request.auth.uid == uid;
-      allow write: if false;
-    }
-
-    match /artifacts/{appId}/public/data/inquiries/{inquiryId} {
-      allow create: if isSignedIn() && validInquiryCreate();
+    match /artifacts/{appId}/public/data/inquiries/{id}{
+      allow create: if signedIn() && validConsent('2026-07-15') && request.resource.data.sensitiveConsent == true;
       allow read, update, delete: if isAdmin();
     }
-
-    match /artifacts/{appId}/public/data/comments/{commentId} {
-      allow create: if isSignedIn() && validCommentCreate();
+    match /artifacts/{appId}/public/data/comments/{id}{
+      allow create: if signedIn() && validConsent('2026-07-15');
       allow read, update, delete: if isAdmin();
     }
-
-    match /artifacts/{appId}/public/data/{collectionName}/{documentId} {
-      allow read: if collectionName in ['notices', 'staff', 'gallery', 'facilities', 'certifications', 'page-content'];
-      allow create, update: if isAdmin() && isValidPublicContent();
-      allow delete: if isAdmin();
+    match /artifacts/{appId}/public/data/meals/{id}{
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isMealPublisher();
     }
-
-    match /{document=**} {
-      allow read, write: if false;
+    match /artifacts/{appId}/public/data/{collectionName}/{id}{
+      allow read: if collectionName in ['notices','staff','gallery','facilities','certifications','page-content','departments'];
+      allow create, update, delete: if isAdmin();
     }
+    match /{document=**}{ allow read, write: if false; }
   }
 }
