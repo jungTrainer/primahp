@@ -30,7 +30,7 @@ function brand(){
         프리마요양병원
       </strong>
       <small class="block text-[11px] font-semibold text-slate-500">
-        프리마 케어 병원
+        PRIMA CARE HOSPITAL
       </small>
     </span>
   `;
