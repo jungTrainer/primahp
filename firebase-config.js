@@ -1,5 +1,10 @@
 // 브라우저용 Firebase 공개 설정만 불러옵니다.
-// 페이지별 기능 스크립트는 각 HTML에서 명시적으로 로드해 실행 순서를 고정합니다.
 if (!window.__firebase_config) {
   document.write('<script src="firebase-public-config.js?v=20260716-8"><\/script>');
 }
+(() => {
+  const page = location.pathname.split('/').pop() || 'index.html';
+  const load = src => { const s=document.createElement('script');s.src=`${src}?v=20260716-8`;s.defer=true;document.head.appendChild(s); };
+  if (page === 'index.html' && new URLSearchParams(location.search).get('preview') === '1') window.addEventListener('load',()=>load('assets/site-editor-ui.js'),{once:true});
+  if (page === 'admin.html') window.addEventListener('load',()=>{load('assets/admin-seed.js');load('assets/admin-editor-events.js');},{once:true});
+})();
