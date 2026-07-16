@@ -10,11 +10,16 @@ window.__firebase_config = {
   appId: '1:1021859837693:web:c674b09f56f561ea6eb094'
 };
 
-// 홈 첫 화면을 좌측 문구·우측 병원 전경 이미지 구조로 구성합니다.
-// 관리자 미리보기에서도 같은 레이아웃을 사용합니다.
+// 기본 화면 구조를 불러온 뒤 로고·입퇴원 반응형 보정 기능을 순서대로 적용합니다.
 (() => {
-  const script = document.createElement('script');
-  script.src = 'assets/hero-split.js';
-  script.defer = true;
-  document.head.appendChild(script);
+  const base = document.createElement('script');
+  base.src = 'assets/hero-split.js';
+  base.defer = true;
+  base.addEventListener('load', () => {
+    const enhancement = document.createElement('script');
+    enhancement.src = 'assets/admission-responsive.js';
+    enhancement.defer = true;
+    document.head.appendChild(enhancement);
+  });
+  document.head.appendChild(base);
 })();
