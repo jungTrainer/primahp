@@ -1,0 +1,69 @@
+:root {
+  --prima-section-y: clamp(4rem, 7vw, 7rem);
+}
+
+html { scroll-behavior: smooth; }
+body { word-break: keep-all; }
+
+h1, h2, h3, .balanced-title {
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+
+p, li, .pretty-text {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+#hero-title {
+  font-size: clamp(1.9rem, 1rem + 3.4vw, 3.4rem) !important;
+  line-height: 1.22 !important;
+}
+
+main h2 {
+  font-size: clamp(1.5rem, 1rem + 1.8vw, 2.25rem) !important;
+  line-height: 1.3;
+}
+
+main p, main li {
+  font-size: clamp(.95rem, .9rem + .3vw, 1.05rem);
+}
+
+.prima-section { padding-block: var(--prima-section-y); }
+.prima-container { width: min(100% - 3rem, 80rem); margin-inline: auto; }
+.prima-dropdown { position: relative; }
+.prima-dropdown-menu {
+  position: absolute; left: 50%; top: calc(100% + .65rem); z-index: 80;
+  min-width: 12.5rem; transform: translateX(-50%) translateY(-.35rem);
+  border: 1px solid #e2e8f0; border-radius: 1rem; background: rgba(255,255,255,.98);
+  box-shadow: 0 18px 45px rgba(15,23,42,.14); padding: .55rem;
+  opacity: 0; visibility: hidden; transition: .18s ease;
+}
+.prima-dropdown:hover .prima-dropdown-menu,
+.prima-dropdown:focus-within .prima-dropdown-menu,
+.prima-dropdown.is-open .prima-dropdown-menu {
+  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+}
+.prima-dropdown-menu button {
+  width: 100%; border-radius: .7rem; padding: .7rem .85rem; text-align: left;
+  font-size: .82rem; font-weight: 700; color: #475569;
+}
+.prima-dropdown-menu button:hover { background: #f0f9ff; color: #0369a1; }
+.prima-mobile-group { border-bottom: 1px solid #e2e8f0; }
+.prima-mobile-group:last-child { border-bottom: 0; }
+.prima-mobile-submenu { display: none; padding: 0 0 .8rem 1rem; }
+.prima-mobile-group.is-open .prima-mobile-submenu { display: grid; }
+.prima-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1.25rem; }
+.prima-step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 1rem; }
+.prima-lightbox {
+  position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center;
+  background: rgba(2,6,23,.9); padding: 1.5rem;
+}
+.prima-lightbox.is-open { display: flex; }
+.prima-lightbox img { max-height: 88vh; max-width: 94vw; object-fit: contain; border-radius: 1rem; }
+@media (max-width: 767px) {
+  .prima-container { width: min(100% - 2rem, 80rem); }
+  #hero-title br { display: none; }
+}
