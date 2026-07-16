@@ -1,11 +1,3 @@
 [
-  {
-    "id": "staff-placeholder-1",
-    "department": "medical",
-    "name": "의료진 정보 준비 중",
-    "position": "실제 의료진 정보로 교체 필요",
-    "bio": "관리자 화면에서 의료진의 성명, 전문분야, 소개와 동의받은 사진을 등록해 주세요.",
-    "photo": "assets/staff-placeholder.svg",
-    "order": 10
-  }
+  {"id":"sample-hong-gildong","department":"medical","name":"홍길동","position":"재활의학과 원장 · 샘플 프로필","bio":"환자의 현재 기능과 생활 목표를 함께 확인하고, 안전하게 일상으로 복귀할 수 있도록 진료와 재활치료를 연결합니다.","career":["○○대학교 의과대학 졸업","○○대학교병원 재활의학과 전공의 수료","재활의학과 전문의","대한재활의학회 정회원","노인 재활 및 보행장애 진료 경험"],"photo":"https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=1000&q=82","photoPos":"50% 35%","isSample":true,"order":10,"sourceName":"Unsplash","sourceUrl":"https://unsplash.com/"}
 ]
