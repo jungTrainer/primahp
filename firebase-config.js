@@ -1,25 +1,34 @@
-// Firebase 웹 앱 연결 설정
-// 이 값은 브라우저용 프로젝트 식별 정보이며, 실제 데이터 접근은 Firebase 보안 규칙이 통제합니다.
-window.__app_id = 'prima-care-hospital-2026';
-window.__firebase_config = {
-  apiKey: 'AIzaSyAKyEMHDUHMgPYiy_98VAuD5hSy5CY6cR4',
-  authDomain: 'prima-nhp.firebaseapp.com',
-  projectId: 'prima-nhp',
-  storageBucket: 'prima-nhp.firebasestorage.app',
-  messagingSenderId: '1021859837693',
-  appId: '1:1021859837693:web:c674b09f56f561ea6eb094'
-};
+// Firebase 공개 설정과 페이지별 기능 로더를 분리합니다.
+// firebase-public-config.js는 브라우저 식별 정보만 포함하며,
+// 실제 데이터 접근 권한은 Firebase 보안 규칙에서 통제합니다.
+if (!window.__firebase_config) {
+  document.write('<script src="firebase-public-config.js?v=20260716-5"><\/script>');
+}
 
-// 기본 화면 구조를 불러온 뒤 로고·입퇴원 반응형 보정 기능을 순서대로 적용합니다.
 (() => {
-  const base = document.createElement('script');
-  base.src = 'assets/hero-split.js';
-  base.defer = true;
-  base.addEventListener('load', () => {
-    const enhancement = document.createElement('script');
-    enhancement.src = 'assets/admission-responsive.js';
-    enhancement.defer = true;
-    document.head.appendChild(enhancement);
-  });
-  document.head.appendChild(base);
+  const page = location.pathname.split('/').pop() || 'index.html';
+  const version = '20260716-5';
+
+  const loadScript = (src, onload) => {
+    const script = document.createElement('script');
+    script.src = `${src}?v=${version}`;
+    script.defer = true;
+    if (onload) script.addEventListener('load', onload, { once: true });
+    document.head.appendChild(script);
+  };
+
+  if (page === 'index.html') {
+    loadScript('assets/hero-split.js', () => {
+      loadScript('assets/admission-responsive.js', () => {
+        loadScript('assets/site-footer-admin.js');
+      });
+    });
+    return;
+  }
+
+  if (page === 'admin.html') {
+    loadScript('assets/image-utils.js', () => {
+      loadScript('assets/admin-image-enhancements.js');
+    });
+  }
 })();
